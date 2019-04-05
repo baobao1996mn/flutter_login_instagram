@@ -17,6 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final String _redirect_uri = 'https://www.instagram.com';
   final String _host = 'https://api.instagram.com/oauth';
   String _url;
+  bool _isDismiss = false;
   FlutterWebView flutterWebView = FlutterWebView();
 
   @override
@@ -115,19 +116,13 @@ class _LoginPageState extends State<LoginPage> {
       print('Didload: $url');
       onPageFinished(url);
     });
-
-//    var result = await Navigator.of(context)
-//        .push(MaterialPageRoute(builder: (context) => WebPage()));
-//    if (result != null) {
-//      var snackBar = SnackBar(content: Text(result));
-//      _scaffoldKey.currentState.showSnackBar(snackBar);
-//    }
   }
 
   void onPageFinished(String url) async {
     String prefix = "$_redirect_uri/?code=";
-    if (url.startsWith(prefix)) {
+    if (url.startsWith(prefix) && !_isDismiss) {
       flutterWebView.dismiss();
+      _isDismiss = true;
       String code = url.replaceFirst(prefix, "");
       Map map = {
         'client_id': _client_id,
@@ -142,11 +137,11 @@ class _LoginPageState extends State<LoginPage> {
         var data = json.decode(response.body);
         _toast = data['access_token'] ?? 'empty';
       }
-//      if (mounted) Navigator.of(context).pop(_toast);
       if (_toast != null) {
         var snackBar = SnackBar(content: Text(_toast));
         _scaffoldKey.currentState.showSnackBar(snackBar);
       }
+      _isDismiss = false;
     } else if (url == '$_redirect_uri/') {
       flutterWebView.load(_url);
     }
