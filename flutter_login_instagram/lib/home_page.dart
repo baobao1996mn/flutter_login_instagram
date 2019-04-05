@@ -97,6 +97,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _login() async {
+    _isDismiss = false;
     Platform.isAndroid
         ? flutterWebView.launch(_url, javaScriptEnabled: true)
         : flutterWebView.launch(_url,
@@ -141,7 +142,6 @@ class _LoginPageState extends State<LoginPage> {
         var snackBar = SnackBar(content: Text(_toast));
         _scaffoldKey.currentState.showSnackBar(snackBar);
       }
-      _isDismiss = false;
     } else if (url == '$_redirect_uri/') {
       flutterWebView.load(_url);
     }
