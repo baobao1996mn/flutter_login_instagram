@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
+import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:flutter_web_view/flutter_web_view.dart';
 
 class WebPage extends StatefulWidget {
   @override
@@ -15,38 +16,59 @@ class WebPage extends StatefulWidget {
 class _WebPageState extends State<WebPage> {
   final String _client_id = 'e9a882a7c659478d99fbd68b93fb2cb7';
   final String _client_secret = 'db47ab5ecec04541a82159c709922659';
-  final String _redirect_uri = 'https://baobao1996mn.wordpress.com';
+  final String _redirect_uri = 'https://www.instagram.com';
   final String _host = 'https://api.instagram.com/oauth';
-  bool isLoading = false;
-  final webView = new FlutterWebviewPlugin();
+  bool _isLoading = false;
+  String _url;
+  FlutterWebView flutterWebView = FlutterWebView();
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    final String _url =
+    _url =
         "$_host/authorize/?client_id=$_client_id&redirect_uri=$_redirect_uri&response_type=code";
-    webView.onUrlChanged.listen((url) => onUrlChanged(webView, url));
-    webView.launch(_url,
-        withJavascript: true, withLocalStorage: true, withZoom: true);
+
+    flutterWebView.launch(_url,
+        headers: {
+          "X-SOME-HEADER": "MyCustomHeader",
+        },
+        toolbarActions: [new ToolbarAction("Back", 1)],
+        javaScriptEnabled: false);
+
+    flutterWebView.onToolbarAction.listen((_) {
+      flutterWebView.dismiss();
+      Navigator.of(context).pop();
+    });
+
+    flutterWebView.onWebViewDidStartLoading.listen((url) {
+      print('StartLoading: $url');
+      setState(() => _isLoading = true);
+    });
+    flutterWebView.onWebViewDidLoad.listen((url) {
+      print('Didload: $url');
+      if (mounted) setState(() => _isLoading = false);
+      onPageFinished(url);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-        child: Scaffold(),
-        onWillPop: () async {
-          webView.close();
-          return true;
-        });
+    return Scaffold(
+      body: _isLoading
+          ? Container(
+              color: Colors.black12,
+              child: CircularProgressIndicator(),
+              alignment: Alignment.center,
+            )
+          : SizedBox(),
+    );
   }
 
-  void onUrlChanged(FlutterWebviewPlugin webView, String url) async {
-    String prefix = "https://baobao1996mn.wordpress.com/?code=";
+  void onPageFinished(String url) async {
+    String prefix = "$_redirect_uri/?code=";
     if (url.startsWith(prefix)) {
-      webView.close();
-      setState(() => this.isLoading = true);
-
+      flutterWebView.dismiss();
       String code = url.replaceFirst(prefix, "");
       Map map = {
         'client_id': _client_id,
@@ -61,8 +83,9 @@ class _WebPageState extends State<WebPage> {
         var data = json.decode(response.body);
         _toast = data['access_token'] ?? 'empty';
       }
-      setState(() => this.isLoading = false);
-      Navigator.of(context).pop(_toast);
+      if (mounted) Navigator.of(context).pop(_toast);
+    } else if (url == '$_redirect_uri/') {
+      flutterWebView.load(_url);
     }
   }
 }
