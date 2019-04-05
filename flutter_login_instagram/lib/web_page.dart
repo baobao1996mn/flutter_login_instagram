@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:core';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:http/http.dart' as http;
 import 'package:flutter_web_view/flutter_web_view.dart';
+import 'package:http/http.dart' as http;
 
 class WebPage extends StatefulWidget {
   @override
@@ -24,17 +24,16 @@ class _WebPageState extends State<WebPage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _url =
         "$_host/authorize/?client_id=$_client_id&redirect_uri=$_redirect_uri&response_type=code";
 
-    flutterWebView.launch(_url,
-        headers: {
-          "X-SOME-HEADER": "MyCustomHeader",
-        },
-        toolbarActions: [new ToolbarAction("Back", 1)],
-        javaScriptEnabled: false);
+    Platform.isAndroid
+        ? flutterWebView.launch(_url, javaScriptEnabled: true)
+        : flutterWebView.launch(_url,
+            headers: {"X-SOME-HEADER": "MyCustomHeader"},
+            toolbarActions: [new ToolbarAction("Back", 1)],
+            javaScriptEnabled: false);
 
     flutterWebView.onToolbarAction.listen((_) {
       flutterWebView.dismiss();
